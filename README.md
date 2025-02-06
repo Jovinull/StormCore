@@ -62,7 +62,7 @@ const int mqtt_port = 1883;
 ### Conexão Wi-Fi e MQTT
 O ESP32 conecta-se à rede Wi-Fi e ao broker MQTT para publicar os dados dos sensores.
 
-### 🌡️ Medição dos Sensores
+### Medição dos Sensores
 - O sensor DHT22 mede temperatura e umidade.
 - O sensor BMP180 mede pressão atmosférica.
 - Sensores de vento capturam velocidade e direção.
