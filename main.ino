@@ -1,7 +1,7 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <Adafruit_BMP085.h>
-#include <DHT.h>
+#include <Adafruit_SHT31.h>
 
 // Configurações do Wi-Fi
 const char* ssid = "SEU_WIFI_SSID";
@@ -21,9 +21,7 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 
 // Sensores
-#define DHTPIN 4        // Pino do sensor DHT22
-#define DHTTYPE DHT22
-DHT dht(DHTPIN, DHTTYPE);
+Adafruit_SHT31 sht31 = Adafruit_SHT31();
 Adafruit_BMP085 bmp;
 
 // Pinos dos sensores de vento e chuva
@@ -36,7 +34,6 @@ Adafruit_BMP085 bmp;
 
 volatile int wind_count = 0;
 volatile int rain_count = 0;
-unsigned long last_wind_time = 0;
 
 // Função para conectar ao Wi-Fi
 void setup_wifi() {
@@ -103,7 +100,10 @@ void setup() {
     client.setServer(mqtt_server, mqtt_port);
 
     // Inicializar Sensores
-    dht.begin();
+    if (!sht31.begin(0x44)) {
+        Serial.println("Erro ao iniciar SHT31!");
+        while (1);
+    }
     if (!bmp.begin()) {
         Serial.println("Erro ao iniciar BMP180!");
         while (1);
@@ -129,8 +129,8 @@ void loop() {
     client.loop();
 
     // Ler Temperatura e Umidade
-    float temperature = dht.readTemperature();
-    float humidity = dht.readHumidity();
+    float temperature = sht31.readTemperature();
+    float humidity = sht31.readHumidity();
     if (!isnan(temperature) && !isnan(humidity)) {
         client.publish(topic_temp, String(temperature).c_str());
         client.publish(topic_hum, String(humidity).c_str());
@@ -141,7 +141,6 @@ void loop() {
     client.publish(topic_pressure, String(pressure).c_str());
 
     // Calcular Velocidade do Vento
-    unsigned long now = millis();
     float wind_speed = (wind_count * 0.18); // Conversão de RPM para Km/h
     wind_count = 0;
     client.publish(topic_wind_speed, String(wind_speed).c_str());
@@ -155,7 +154,7 @@ void loop() {
     rain_count = 0;
     client.publish(topic_rain, String(rain_mm).c_str());
 
-    Serial.println("📡 Dados enviados ao MQTT!");
+    Serial.println("\U0001F4E1 Dados enviados ao MQTT!");
 
     delay(5000); // Publica a cada 5 segundos
 }
